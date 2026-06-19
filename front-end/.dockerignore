@@ -1,0 +1,9 @@
+node_modules
+.tanstack
+.output
+.git
+.gitignore
+*.md
+Dockerfile
+.dockerignore
+dist

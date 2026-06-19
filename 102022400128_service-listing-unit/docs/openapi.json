@@ -1,0 +1,59 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Listing Unit Service API",
+    "description": "Static OpenAPI contract mirror. L5 Swagger annotations are stored in app/OpenApi and app/Http/Controllers/ListingController.php.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8001"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "IaeApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-IAE-KEY"
+      }
+    }
+  },
+  "security": [
+    {
+      "IaeApiKey": []
+    }
+  ],
+  "paths": {
+    "/api/v1/listings": {
+      "get": {
+        "summary": "Get all listing units",
+        "tags": ["Listings"],
+        "responses": {
+          "200": {"description": "Operation successful"},
+          "401": {"description": "Invalid or missing API key"}
+        }
+      },
+      "post": {
+        "summary": "Create a new listing unit",
+        "tags": ["Listings"],
+        "responses": {
+          "201": {"description": "Listing unit created successfully"},
+          "401": {"description": "Invalid or missing API key"},
+          "422": {"description": "Validation failed"}
+        }
+      }
+    },
+    "/api/v1/listings/{id}": {
+      "get": {
+        "summary": "Get one listing unit by id",
+        "tags": ["Listings"],
+        "responses": {
+          "200": {"description": "Operation successful"},
+          "401": {"description": "Invalid or missing API key"},
+          "404": {"description": "Listing unit not found"}
+        }
+      }
+    }
+  }
+}

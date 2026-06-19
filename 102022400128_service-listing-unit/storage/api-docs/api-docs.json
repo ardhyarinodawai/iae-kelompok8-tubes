@@ -1,0 +1,388 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Listing Unit Service API",
+        "description": "API documentation for Listing Unit Service",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8001",
+            "description": "Local Development Server"
+        },
+        {
+            "url": "..\\OpenApi\\OpenApiSpec.php"
+        }
+    ],
+    "paths": {
+        "/api/v1/listing-service/listings": {
+            "get": {
+                "tags": [
+                    "Listings"
+                ],
+                "summary": "Get all listing units",
+                "operationId": "getListings",
+                "responses": {
+                    "200": {
+                        "description": "Listing units retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingSuccessCollectionResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or missing API key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "IaeApiKey": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Listings"
+                ],
+                "summary": "Create a new listing unit",
+                "operationId": "createListing",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreListingRequestBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Listing unit created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingSuccessSingleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or missing API key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "IaeApiKey": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/listing-service/listings/{id}": {
+            "get": {
+                "tags": [
+                    "Listings"
+                ],
+                "summary": "Get one listing unit by id",
+                "operationId": "getListingById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the listing unit",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listing unit retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingSuccessSingleResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or missing API key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Listing unit not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListingErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "IaeApiKey": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ListingResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "unit_code": {
+                        "type": "string",
+                        "example": "A-1203",
+                        "maxLength": 50
+                    },
+                    "unit_name": {
+                        "type": "string",
+                        "example": "Unit 1203 Tower A",
+                        "maxLength": 150
+                    },
+                    "tower": {
+                        "type": "string",
+                        "example": "Tower A",
+                        "maxLength": 80
+                    },
+                    "floor": {
+                        "type": "integer",
+                        "example": 12,
+                        "minimum": 0
+                    },
+                    "room_number": {
+                        "type": "string",
+                        "example": "1203",
+                        "maxLength": 50
+                    },
+                    "unit_type": {
+                        "type": "string",
+                        "example": "Studio",
+                        "maxLength": 80
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "available",
+                        "enum": [
+                            "available",
+                            "occupied",
+                            "maintenance"
+                        ]
+                    },
+                    "tenant_name": {
+                        "type": "string",
+                        "example": "Budi Santoso",
+                        "nullable": true,
+                        "maxLength": 150
+                    },
+                    "tenant_phone": {
+                        "type": "string",
+                        "example": "081234567890",
+                        "nullable": true,
+                        "maxLength": 30
+                    },
+                    "receipt_number": {
+                        "type": "string",
+                        "example": "RCPT-2024-00012",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T00:00:00Z"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-01-01T00:00:00Z"
+                    }
+                },
+                "type": "object"
+            },
+            "StoreListingRequestBody": {
+                "required": [
+                    "unit_code",
+                    "unit_name",
+                    "tower",
+                    "floor",
+                    "room_number",
+                    "unit_type",
+                    "status"
+                ],
+                "properties": {
+                    "unit_code": {
+                        "type": "string",
+                        "example": "A-1203",
+                        "maxLength": 50
+                    },
+                    "unit_name": {
+                        "type": "string",
+                        "example": "Unit 1203 Tower A",
+                        "maxLength": 150
+                    },
+                    "tower": {
+                        "type": "string",
+                        "example": "Tower A",
+                        "maxLength": 80
+                    },
+                    "floor": {
+                        "type": "integer",
+                        "example": 12,
+                        "minimum": 0
+                    },
+                    "room_number": {
+                        "type": "string",
+                        "example": "1203",
+                        "maxLength": 50
+                    },
+                    "unit_type": {
+                        "type": "string",
+                        "example": "Studio",
+                        "maxLength": 80
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "available",
+                        "enum": [
+                            "available",
+                            "occupied",
+                            "maintenance"
+                        ]
+                    },
+                    "tenant_name": {
+                        "type": "string",
+                        "example": "Budi Santoso",
+                        "nullable": true,
+                        "maxLength": 150
+                    },
+                    "tenant_phone": {
+                        "type": "string",
+                        "example": "081234567890",
+                        "nullable": true,
+                        "maxLength": 30
+                    }
+                },
+                "type": "object"
+            },
+            "ListingSuccessCollectionResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Listing units retrieved successfully"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ListingResource"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ListingSuccessSingleResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Listing unit retrieved successfully"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/ListingResource"
+                    }
+                },
+                "type": "object"
+            },
+            "ListingErrorResponse": {
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "message": {
+                        "type": "string",
+                        "example": "Listing unit not found"
+                    },
+                    "data": {
+                        "example": null,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "apiKeyAuth": {
+                "type": "apiKey",
+                "description": "Input API Key here.",
+                "name": "X-API-KEY",
+                "in": "header"
+            },
+            "IaeApiKey": {
+                "type": "apiKey",
+                "description": "Use the service owner NIM: 102022400128",
+                "name": "X-IAE-KEY",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Listings",
+            "description": "API Endpoints for managing listing units"
+        }
+    ],
+    "security": [
+        {
+            "IaeApiKey": []
+        }
+    ]
+}

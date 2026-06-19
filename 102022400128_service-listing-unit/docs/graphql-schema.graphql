@@ -1,0 +1,18 @@
+type ListingUnit {
+  id: ID!
+  unit_code: String!
+  unit_name: String!
+  tower: String!
+  floor: Int!
+  room_number: String!
+  unit_type: String!
+  status: String!
+  tenant_name: String
+  tenant_phone: String
+  created_at: String
+  updated_at: String
+}
+
+type Query {
+  unit(id: ID!): ListingUnit
+}

@@ -1,0 +1,233 @@
+services:
+
+  # ──────────────────────────────────────────────
+  # Kong Postgres Database
+  # ──────────────────────────────────────────────
+  kong-db:
+    image: postgres:13
+    container_name: kong-db
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong_password
+      POSTGRES_DB: kong
+    volumes:
+      - kong_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  kong-migrations:
+    image: kong:3.6
+    container_name: kong-migrations
+    depends_on:
+      kong-db:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_PORT: 5432
+      KONG_PG_DATABASE: kong
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+    command: kong migrations bootstrap
+    restart: "no"
+
+  # ──────────────────────────────────────────────
+  # Kong API Gateway (Satu-satunya Entry Point)
+  # ──────────────────────────────────────────────
+  kong:
+    image: kong:3.6
+    container_name: kong
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-db
+      KONG_PG_PORT: 5432
+      KONG_PG_DATABASE: kong
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      # Membuka port 8001 (HTTP) untuk koneksi Admin internal
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+      KONG_PROXY_LISTEN: "0.0.0.0:8080"
+      KONG_ADMIN_GUI_URL: "http://localhost:8010"
+      KONG_ADMIN_GUI_LISTEN: "0.0.0.0:8010"
+    ports:
+      - "8080:8080"   # Kong Proxy  → Sekarang SEMUA akses (Frontend & Backend) lewat sini
+      - "8444:8444"   # Kong Admin API
+      - "8010:8010"   # Kong Manager UI → http://localhost:8010
+      - "8001:8001"   # Kong Admin API HTTP
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  kong-provisioner:
+    image: curlimages/curl:latest
+    container_name: kong-provisioner
+    depends_on:
+      kong:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ADMIN="http://kong:8001" # Menggunakan HTTP (8001) lebih mudah untuk cURL
+
+        upsert_service() {
+          NAME=$$1
+          URL=$$2
+          echo ">>> Mendaftarkan service: $$NAME -> $$URL"
+          curl -sf -X PUT $$ADMIN/services/$$NAME \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"$$URL\"}" || echo "    [WARN] Gagal upsert service $$NAME"
+        }
+
+        upsert_route() {
+          SERVICE=$$1
+          ROUTE_NAME=$$2
+          L_PATH=$$3
+          curl -sf -X PUT $$ADMIN/routes/$$ROUTE_NAME \
+            -H "Content-Type: application/json" \
+            -d "{\"service\":{\"name\":\"$$SERVICE\"},\"paths\":[\"$$L_PATH\"],\"strip_path\":false}" || echo "    [WARN] Gagal upsert route $$ROUTE_NAME"
+        }
+
+        # 1. Rent Contract Service
+        upsert_service rent-contract-service http://rent-contract-service:8000
+        upsert_route   rent-contract-service rent-contract-route /api/v1/contract-service
+
+        # 2. Listing Unit Service
+        upsert_service listing-unit-service http://listing-unit-service:8001
+        upsert_route   listing-unit-service listing-unit-route /api/v1/listing-service
+
+        # 3. Rent Ticket Service
+        upsert_service rent-ticket-service http://rent-ticket-service:8002
+        upsert_route   rent-ticket-service rent-ticket-route /api/v1/ticket-service
+
+        # 4. Frontend Application (Didaftarkan ke root path '/')
+        upsert_service frontend-tenant-app http://frontend-tenant-app:8003
+        upsert_route   frontend-tenant-app frontend-route /
+
+        echo ">>> Semua service dan Frontend berhasil didaftarkan ke Kong"
+
+  # ──────────────────────────────────────────────
+  # Konga API Gateway Dashboard
+  # ──────────────────────────────────────────────
+  konga:
+    image: pantsel/konga
+    container_name: konga
+    ports:
+      - "1337:1337"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - kong
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Application Services (Port ditutup dari luar)
+  # ──────────────────────────────────────────────
+  rent-contract-service:
+    build:
+      context: ./102022400056_rent-contract
+      dockerfile: Dockerfile
+    container_name: rent-contract-service
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: "base64:zU1br0y735bZ//T1/fiw84XilrEaVdtwUTVYSxqhqp4="
+      APP_URL: "http://localhost:8080/api/v1/contract-service"
+      L5_SWAGGER_PROXY: true
+      L5_SWAGGER_CONST_HOST: "http://localhost:8080/api/v1/contract-service"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      API_KEY: 102022400056
+      CENTRAL_SERVER_URL: "https://iae-sso.virtualfri.id/"
+      CENTRAL_TEAM_API_KEY: "KEY-MHS-151"
+      SOAP_AUDIT_URL: "https://iae-sso.virtualfri.id/soap/v1/audit"
+      RABBITMQ_HOST: "iae-sso.virtualfri.id"
+      RABBITMQ_HTTP_URL: "https://iae-sso.virtualfri.id/api/v1/messages/publish"
+      RABBITMQ_EXCHANGE: iae.central.exchange
+    restart: unless-stopped
+
+  listing-unit-service:
+    build:
+      context: ./102022400128_service-listing-unit
+      dockerfile: Dockerfile
+    container_name: listing-unit-service
+    environment:
+      APP_NAME: "Listing Unit Service"
+      APP_ENV: local
+      APP_KEY: "base64:VgQ+J2+2Bct7x3WwOQn3gUXT5dW6UI0Bv12U4S1Z1gQ="
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8080/api/v1/listing-service"
+      L5_SWAGGER_CONST_HOST: "http://localhost:8080/api/v1/listing-service"
+      L5_SWAGGER_PROXY: true
+      APP_TIMEZONE: "Asia/Jakarta"
+      SERVICE_NAME: "Listing-Unit-Service"
+      API_VERSION: "v1"
+      IAE_API_KEY: "102022400128"
+      L5_SWAGGER_GENERATE_ALWAYS: "true"
+      L5_SWAGGER_UI_DOC_EXPANSION: "full"
+      L5_SWAGGER_UI_PERSIST_AUTHORIZATION: "true"
+      DB_CONNECTION: sqlite
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+    restart: unless-stopped
+
+  rent-ticket-service:
+    build:
+      context: ./102022400198_rent-ticket-management
+      dockerfile: Dockerfile
+    container_name: rent-ticket-service
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: local
+      APP_KEY: "base64:rrQh+wQ4DmtA/NQL2QC2iwl+vBln04EXTeGr3Tuv/h4="
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8080/api/v1/ticket-service"
+      L5_SWAGGER_CONST_HOST: "http://localhost:8080/api/v1/ticket-service"
+      LISTING_SERVICE_URL: "http://kong:8080"
+      CONTRACT_SERVICE_URL: "http://kong:8080"
+      L5_SWAGGER_PROXY: true
+      APP_LOCALE: en
+      APP_FALLBACK_LOCALE: en
+      APP_FAKER_LOCALE: en_US
+      DB_CONNECTION: sqlite
+      SESSION_DRIVER: file
+      SESSION_LIFETIME: 120
+      SESSION_ENCRYPT: false
+      SESSION_PATH: /
+      SESSION_DOMAIN: null
+      BROADCAST_CONNECTION: log
+      FILESYSTEM_DISK: local
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      MEMCACHED_HOST: 127.0.0.1
+    restart: unless-stopped
+
+  frontend-tenant-app:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: frontend-tenant-app
+    environment:
+      PORT: 8003
+    restart: unless-stopped
+
+volumes:
+  listing_unit_db_data:
+  kong_db_data: # Wajib agar konfigurasi Kong tidak hilang saat direstart

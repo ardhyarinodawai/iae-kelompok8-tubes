@@ -124,7 +124,6 @@ class TicketController extends Controller
                 'listing'  => $listing,
                 'contract' => $activeContract,
             ],
-            
         ], 201);
     }
 }

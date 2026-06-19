@@ -1,0 +1,14 @@
+"A datetime string in ISO 8601 format: YYYY-MM-DDTHH:MM:SS+HH:MM"
+scalar DateTime
+    @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+"A date string in ISO 8601 format: YYYY-MM-DD"
+scalar Date @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\Date")
+
+type Query
+
+type Mutation
+
+#import models/ticket.graphql
+
+

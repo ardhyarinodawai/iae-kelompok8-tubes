@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  ticket-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dawai-ticket-service
+    ports:
+      - "8002:8002"
+    volumes:
+      - .:/var/www
+    networks:
+      - rent-network
+    environment:
+      APP_NAME: Laravel
+      APP_ENV: local
+      APP_KEY: "base64:rrQh+wQ4DmtA/NQL2QC2iwl+vBln04EXTeGr3Tuv/h4="
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8080/api/v1/ticket-service"
+      L5_SWAGGER_CONST_HOST: "http://localhost:8080/api/v1/ticket-service"
+      L5_SWAGGER_PROXY: true
+      APP_LOCALE: en
+      APP_FALLBACK_LOCALE: en
+      APP_FAKER_LOCALE: en_US
+      DB_CONNECTION: sqlite
+      SESSION_DRIVER: file
+      SESSION_LIFETIME: 120
+      SESSION_ENCRYPT: false
+      SESSION_PATH: /
+      SESSION_DOMAIN: null
+      BROADCAST_CONNECTION: log
+      FILESYSTEM_DISK: local
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      MEMCACHED_HOST: 127.0.0.1
+
+networks:
+  rent-network:
+    driver: bridge

@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────
+# Type: Tenant
+# ─────────────────────────────────────────────
+type Tenant {
+    id: ID!
+    name: String!
+    email: String!
+    phone: String
+    nik: String
+    contracts: [Contract!]! @hasMany
+    contracts_count: Int! @count(relation: "contracts")
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+# ─────────────────────────────────────────────
+# Input: CreateTenantInput
+# ─────────────────────────────────────────────
+input CreateTenantInput {
+    name: String! @rules(apply: ["max:255"])
+
+    "Harus berformat email dan unik"
+    email: String! @rules(apply: ["email", "max:255", "unique:tenants,email"])
+
+    phone: String! @rules(apply: ["max:20"])
+
+    nik: String! @rules(apply: ["max:20", "unique:tenants,nik"])
+}
+
+# ─────────────────────────────────────────────
+# Input: UpdateTenantInput
+# ─────────────────────────────────────────────
+input UpdateTenantInput {
+    name: String @rules(apply: ["max:255"])
+
+    email: String @rules(apply: ["email", "max:255"])
+
+    phone: String @rules(apply: ["max:20"])
+
+    nik: String @rules(apply: ["max:20"])
+}
+
+# ─────────────────────────────────────────────
+# Extend Query — Tenant
+# ─────────────────────────────────────────────
+extend type Query {
+    "Mengambil semua tenant, diurutkan dari terbaru"
+    tenants: [Tenant!]! @all(scopes: ["latest"])
+
+    "Mengambil satu tenant berdasarkan UUID"
+    tenant(id: ID! @eq): Tenant @find
+}
+
+# ─────────────────────────────────────────────
+# Extend Mutation — Tenant
+# ─────────────────────────────────────────────
+extend type Mutation {
+    createTenant(input: CreateTenantInput! @spread): Tenant! @create
+
+    updateTenant(id: ID!, input: UpdateTenantInput! @spread): Tenant! @update
+
+    deleteTenant(id: ID!): Tenant @delete
+}

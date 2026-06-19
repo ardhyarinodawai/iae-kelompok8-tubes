@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: 102022400056_RENT-CONTRACT
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www
+      - /var/www/vendor
+      - /var/www/node_modules
+      - /var/www/bootstrap/cache
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: "http://localhost:8080/api/v1/contract-service"
+      L5_SWAGGER_PROXY: true
+      L5_SWAGGER_CONST_HOST: "http://localhost:8080/api/v1/contract-service"
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+      CACHE_STORE: database
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      API_KEY: 102022400056
+      CENTRAL_SERVER_URL: "https://iae-sso.virtualfri.id/"
+      CENTRAL_TEAM_API_KEY: "KEY-MHS-151"
+      SOAP_AUDIT_URL: "https://iae-sso.virtualfri.id/soap/v1/audit"
+      RABBITMQ_HOST: "iae-sso.virtualfri.id"
+      RABBITMQ_HTTP_URL: "https://iae-sso.virtualfri.id/api/v1/messages/publish"
+      RABBITMQ_EXCHANGE: iae.central.exchange
+
+  
+  vite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_vite
+    restart: unless-stopped
+    working_dir: /var/www
+    command: npm run dev -- --host
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/var/www
+      - /var/www/node_modules
+      - /var/www/bootstrap/cache

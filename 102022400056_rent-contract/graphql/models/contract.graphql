@@ -1,0 +1,69 @@
+enum ContractStatus {
+    DRAFT
+    ACTIVE
+    EXPIRED
+    TERMINATED
+}
+
+type Contract {
+    id: ID!
+    tenant_id: ID!
+    listing_id: ID!
+    start_date: Date!
+    end_date: Date!
+    is_active: Boolean!
+    status: ContractStatus!
+    tenant: Tenant! @belongsTo
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+# ─────────────────────────────────────────────
+# Input: CreateContractInput
+# ─────────────────────────────────────────────
+input CreateContractInput {
+    tenant_id: ID! @rules(apply: ["exists:tenants,id"])
+
+    listing_id: ID!
+
+    start_date: Date!
+
+    end_date: Date! @rules(apply: ["after:start_date"])
+
+    status: ContractStatus!
+
+    is_active: Boolean
+}
+
+# ─────────────────────────────────────────────
+# Input: UpdateContractInput
+# ─────────────────────────────────────────────
+input UpdateContractInput {
+    tenant_id: ID @rules(apply: ["exists:tenants,id"])
+    listing_id: ID
+    start_date: Date
+    end_date: Date @rules(apply: ["after:start_date"])
+    status: ContractStatus
+    is_active: Boolean
+}
+
+# ─────────────────────────────────────────────
+# Extend Query — Contract
+# ─────────────────────────────────────────────
+extend type Query {
+    contracts: [Contract!] @all
+
+    contract(id: ID! @eq): Contract @find
+}
+
+# ─────────────────────────────────────────────
+# Extend Mutation — Contract
+# ─────────────────────────────────────────────
+extend type Mutation {
+    createContract(input: CreateContractInput! @spread): Contract! @create
+
+    updateContract(id: ID!, input: UpdateContractInput! @spread): Contract!
+        @update
+
+    deleteContract(id: ID!): Contract @delete
+}
